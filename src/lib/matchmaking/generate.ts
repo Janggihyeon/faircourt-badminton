@@ -54,6 +54,7 @@ export const generateAutoMatches = ({
           completedMatches,
           skillGapMode,
           activeGenderRatio,
+          activePlayers,
         });
         return {
           player_ids: candidate.map((player) => player.id),
