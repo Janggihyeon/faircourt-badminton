@@ -11,12 +11,12 @@ const combinations = <T>(items: T[], size: number): T[][] => {
   ];
 };
 
-export const shouldWarnBeforeGenerate = (activePlayers: Player[], count: number) => {
-  const men = activePlayers.filter((player) => player.gender === "M").length;
-  const women = activePlayers.length - men;
+export const shouldWarnBeforeGenerate = (eligiblePlayers: Player[], count: number) => {
+  const men = eligiblePlayers.filter((player) => player.gender === "M").length;
+  const women = eligiblePlayers.length - men;
   const hasValidComposition = men >= 4 || women >= 4 || (men >= 2 && women >= 2);
   if (!hasValidComposition) return "자동 대진에 필요한 성별 구성이 부족합니다.";
-  if (activePlayers.length < count * 4) {
+  if (eligiblePlayers.length < count * 4) {
     return "현재 참여 인원으로는 선택한 개수의 대진을 모든 조건을 만족하면서 생성하기 어렵습니다. 연속 출전 또는 반복 조합이 발생할 수 있습니다.";
   }
   return null;
@@ -35,16 +35,16 @@ export const generateAutoMatches = ({
   count: number;
   skillGapMode: SkillGapMode;
 }) => {
-  const activePlayers = players.filter((player) => player.status === "active");
+  const eligiblePlayers = players.filter((player) => player.status === "active" || player.status === "playing");
   const activeGenderRatio = {
-    men: activePlayers.filter((player) => player.gender === "M").length,
-    women: activePlayers.filter((player) => player.gender === "F").length,
+    men: eligiblePlayers.filter((player) => player.gender === "M").length,
+    women: eligiblePlayers.filter((player) => player.gender === "F").length,
   };
   const selected: NewAutoMatch[] = [];
   const temporaryContext = [...contextMatches];
 
   for (let index = 0; index < count; index += 1) {
-    const candidates = combinations(activePlayers, 4)
+    const candidates = combinations(eligiblePlayers, 4)
       .map((candidate) => ({ candidate, type: inferMatchType(candidate) }))
       .filter((item): item is { candidate: Player[]; type: "men" | "women" | "mixed" } => item.type !== null)
       .map(({ candidate, type }) => {
@@ -54,7 +54,7 @@ export const generateAutoMatches = ({
           completedMatches,
           skillGapMode,
           activeGenderRatio,
-          activePlayers,
+          eligiblePlayers,
         });
         return {
           player_ids: candidate.map((player) => player.id),

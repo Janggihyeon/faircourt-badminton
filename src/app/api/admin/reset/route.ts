@@ -18,6 +18,11 @@ export async function POST(request: NextRequest) {
         .update({ games_played: 0, last_played_at: null, updated_at: new Date().toISOString() })
         .neq("id", "00000000-0000-0000-0000-000000000000");
       if (playersError) throw playersError;
+      const { error: playingError } = await supabase
+        .from("players")
+        .update({ status: "active", updated_at: new Date().toISOString() })
+        .eq("status", "playing");
+      if (playingError) throw playingError;
     } else {
       await supabase.from("players").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     }

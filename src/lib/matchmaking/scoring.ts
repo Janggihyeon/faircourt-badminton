@@ -17,14 +17,14 @@ export const scoreCandidate = ({
   completedMatches,
   skillGapMode,
   activeGenderRatio,
-  activePlayers,
+  eligiblePlayers,
 }: {
   candidate: Player[];
   contextMatches: Match[];
   completedMatches: Match[];
   skillGapMode: SkillGapMode;
   activeGenderRatio: { men: number; women: number };
-  activePlayers: Player[];
+  eligiblePlayers: Player[];
 }) => {
   const ids = candidate.map((player) => player.id);
   const key = sameGroupKey(ids);
@@ -51,7 +51,7 @@ export const scoreCandidate = ({
 
   const now = Date.now();
   const getAvailableSince = (player: Player) => Math.max(new Date(player.created_at).getTime(), new Date(player.updated_at).getTime());
-  const meetingOldestActiveAt = Math.min(...activePlayers.map(getAvailableSince));
+  const meetingOldestActiveAt = Math.min(...eligiblePlayers.map(getAvailableSince));
   score += candidate.reduce((sum, player) => {
     const joinedAt = getAvailableSince(player);
     const joinedLate = joinedAt - meetingOldestActiveAt > 30 * 60 * 1000;

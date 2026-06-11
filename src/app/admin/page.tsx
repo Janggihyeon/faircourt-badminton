@@ -97,7 +97,7 @@ export default function AdminPage() {
     const players = state?.players ?? [];
     return players.filter((player) => player.status === "active" || manualSelections.includes(player.id));
   }, [state, manualSelections]);
-  const activePlayers = activePlayerOptions.length;
+  const activePlayers = useMemo(() => state?.players.filter((player) => player.status === "active" || player.status === "playing").length ?? 0, [state]);
   const completedCount = useMemo(() => state?.matches.filter((match) => match.status === "completed").length ?? 0, [state]);
   const playingPlayerIds = useMemo(() => new Set(inProgress.flatMap((match) => match.player_ids)), [inProgress]);
 
