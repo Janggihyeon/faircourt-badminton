@@ -16,6 +16,13 @@ const sectionClass = "rounded-lg border border-slate-200 bg-white/95 p-5 shadow-
 const inputClass = "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
 const buttonClass = "rounded-md bg-emerald-700 px-3 py-2 text-sm font-bold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-800 disabled:opacity-50";
 const ghostButtonClass = "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm hover:border-emerald-500 hover:bg-emerald-50 disabled:opacity-50";
+const playerStatusStyle = {
+  not_arrived: { row: "bg-slate-50", badge: "bg-slate-200 text-slate-700" },
+  active: { row: "bg-emerald-50", badge: "bg-emerald-200 text-emerald-900" },
+  playing: { row: "bg-sky-50", badge: "bg-sky-200 text-sky-900" },
+  left: { row: "bg-amber-50", badge: "bg-amber-200 text-amber-900" },
+  inactive: { row: "bg-rose-50", badge: "bg-rose-200 text-rose-900" },
+} satisfies Record<Player["status"], { row: string; badge: string }>;
 
 export default function AdminPage() {
   const router = useRouter();
@@ -290,7 +297,7 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {state.players.map((player) => (
-                  <tr key={player.id} className="border-b border-slate-100">
+                  <tr key={player.id} className={`border-b border-white ${playerStatusStyle[player.status].row}`}>
                     <td className="py-2">
                       <input
                         type="checkbox"
@@ -303,7 +310,11 @@ export default function AdminPage() {
                     <td className="font-semibold">{player.name}</td>
                     <td>{genderLabel(player.gender)}</td>
                     <td>{player.skill}</td>
-                    <td>{statusLabel(player.status)}</td>
+                    <td>
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black ${playerStatusStyle[player.status].badge}`}>
+                        {statusLabel(player.status)}
+                      </span>
+                    </td>
                     <td>{player.games_played}</td>
                     <td className="flex flex-wrap gap-1 py-2">
                       <button className={ghostButtonClass} onClick={() => request(`/api/admin/players/${player.id}`, { method: "PATCH", body: JSON.stringify({ status: "active" }) }, "참여 처리했습니다.")}>
