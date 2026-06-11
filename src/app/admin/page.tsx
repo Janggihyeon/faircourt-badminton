@@ -94,6 +94,7 @@ export default function AdminPage() {
   const inProgress = useMemo(() => state?.matches.filter((match) => match.status === "in_progress") ?? [], [state]);
   const activePlayers = useMemo(() => state?.players.filter((player) => player.status === "active" || player.status === "playing").length ?? 0, [state]);
   const completedCount = useMemo(() => state?.matches.filter((match) => match.status === "completed").length ?? 0, [state]);
+  const playingPlayerIds = useMemo(() => new Set(inProgress.flatMap((match) => match.player_ids)), [inProgress]);
 
   if (!state) {
     return <main className="min-h-screen bg-slate-100 p-6 text-slate-950">불러오는 중...</main>;
@@ -110,7 +111,11 @@ export default function AdminPage() {
     return { player_ids: selectedPlayers };
   };
 
-  const renderMatch = (match: MatchWithPlayers, controls: "generated" | "queue" | "progress" | "record") => (
+  const renderMatch = (match: MatchWithPlayers, controls: "generated" | "queue" | "progress" | "record") => {
+    const overlappingPlayers = controls === "queue" ? match.players.filter((player) => playingPlayerIds.has(player.id)) : [];
+    const hasCourtConflict = overlappingPlayers.length > 0;
+
+    return (
     <div key={match.id} className="rounded-md border border-slate-200 bg-slate-50 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -121,6 +126,11 @@ export default function AdminPage() {
           <p className="mt-1 text-xs text-slate-500">
             {matchTypeLabel(match.match_type)} · {match.source === "auto" ? "자동" : "수동"} · {matchStatusLabel(match.status)}
           </p>
+          {hasCourtConflict ? (
+            <p className="mt-2 rounded-md bg-red-100 px-2 py-1 text-xs font-bold text-red-700">
+              진행 중 중복: {overlappingPlayers.map((player) => player.name).join(", ")}
+            </p>
+          ) : null}
         </div>
         {controls !== "record" ? (
           <div className="flex flex-wrap gap-2">
@@ -132,6 +142,7 @@ export default function AdminPage() {
             {controls === "queue" ? (
               <button
                 className={buttonClass}
+                disabled={hasCourtConflict}
                 onClick={() => {
                   if (match.operation_order !== 1 && !confirm("이 대진은 대기열의 첫 번째 대진이 아닙니다. 순서를 건너뛰고 이 경기를 시작하시겠습니까?")) return;
                   if (inProgress.length >= state.settings.court_warning_limit && !confirm("현재 진행 중인 경기가 설정된 코트 기준에 도달했습니다. 실제 사용 가능한 코트를 확인한 뒤 진행해주세요. 그래도 이 경기를 시작하시겠습니까?")) return;
@@ -167,6 +178,7 @@ export default function AdminPage() {
       </div>
     </div>
   );
+  };
 
   return (
     <main className="min-h-screen bg-[#f5f7f2] p-4 text-slate-950 md:p-6">

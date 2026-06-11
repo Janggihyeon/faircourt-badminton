@@ -12,8 +12,18 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
     const supabase = getSupabaseAdmin();
     const settings = await ensureSettings();
     const state = await fetchState();
-    const inProgressCount = state.matches.filter((match) => match.status === "in_progress").length;
+    const inProgressMatches = state.matches.filter((match) => match.status === "in_progress" && match.id !== id);
+    const inProgressCount = inProgressMatches.length;
     const match = await getMatch(id);
+    const occupiedPlayerIds = new Set(inProgressMatches.flatMap((match) => match.player_ids));
+    const duplicatePlayerIds = match.player_ids.filter((playerId) => occupiedPlayerIds.has(playerId));
+    if (duplicatePlayerIds.length > 0) {
+      const duplicateNames = state.players
+        .filter((player) => duplicatePlayerIds.includes(player.id))
+        .map((player) => player.name)
+        .join(", ");
+      throw new Error(`이미 진행 중인 경기에 포함된 참가자는 동시에 다른 코트에 들어갈 수 없습니다: ${duplicateNames}`);
+    }
     const now = new Date().toISOString();
 
     await supabase.from("app_settings").update({ meeting_started: true, updated_at: now }).eq("id", 1);
