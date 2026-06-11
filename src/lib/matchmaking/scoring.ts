@@ -62,12 +62,45 @@ export const scoreCandidate = ({
   }
   if (matchType === "men" && activeGenderRatio.women >= activeGenderRatio.men * 0.75) score += 18;
   if (matchType === "women" && activeGenderRatio.men >= activeGenderRatio.women * 0.75) score += 18;
+  if (matchType) {
+    score += getPersonalMatchTypePenalty(candidate, matchType, [...contextMatches, ...recentCompleted]);
+  }
 
   const skillPenalty = getSkillPenalty(candidate, skillGapMode);
   score += skillPenalty;
   if (skillPenalty >= 60) warnings.push("실력 차이가 큰 조합입니다.");
 
   return { score, warnings };
+};
+
+const getPersonalMatchTypePenalty = (
+  candidate: Player[],
+  matchType: "men" | "women" | "mixed",
+  matches: Match[],
+) => {
+  const counts = new Map<string, { sameGender: number; mixed: number }>();
+
+  for (const match of matches) {
+    if (!["men", "women", "mixed"].includes(match.match_type)) continue;
+    for (const playerId of match.player_ids) {
+      const current = counts.get(playerId) ?? { sameGender: 0, mixed: 0 };
+      if (match.match_type === "mixed") current.mixed += 1;
+      else current.sameGender += 1;
+      counts.set(playerId, current);
+    }
+  }
+
+  return candidate.reduce((penalty, player) => {
+    const current = counts.get(player.id) ?? { sameGender: 0, mixed: 0 };
+    const targetCount = matchType === "mixed" ? current.mixed : current.sameGender;
+    const alternativeCount = matchType === "mixed" ? current.sameGender : current.mixed;
+    const imbalance = targetCount - alternativeCount;
+
+    if (imbalance >= 2) return penalty + imbalance * 24;
+    if (imbalance === 1) return penalty + 8;
+    if (imbalance <= -2) return penalty - 10;
+    return penalty;
+  }, 0);
 };
 
 const getSkillPenalty = (candidate: Player[], mode: SkillGapMode) => {
