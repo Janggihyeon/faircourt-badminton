@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
     const state = await fetchState();
     const activePlayers = state.players.filter((player) => player.status === "active");
     const warning = shouldWarnBeforeGenerate(activePlayers, count);
+    if (warning === "자동 대진에 필요한 성별 구성이 부족합니다.") {
+      throw new Error(warning);
+    }
     if (warning && !force) return jsonOk({ needsConfirmation: true, warning });
 
     const contextMatches = state.matches.filter((match) => ["generated", "operation_queue", "in_progress"].includes(match.status));

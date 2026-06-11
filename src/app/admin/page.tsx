@@ -58,7 +58,7 @@ export default function AdminPage() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  const request = async (url: string, options: RequestInit = {}, success = "처리되었습니다.") => {
+  const request = async (url: string, options: RequestInit = {}, success = "처리되었습니다.", showSuccess = true) => {
     setError("");
     setMessage("");
     const response = await fetch(url, {
@@ -70,7 +70,7 @@ export default function AdminPage() {
       setError(data.error ?? "요청을 처리하지 못했습니다.");
       return null;
     }
-    setMessage(data.warning ?? success);
+    if (showSuccess) setMessage(data.warning ?? success);
     await load();
     return data;
   };
@@ -371,10 +371,15 @@ export default function AdminPage() {
               <button
                 className={buttonClass}
                 onClick={async () => {
-                  const data = await request("/api/admin/generate-matches", { method: "POST", body: JSON.stringify({ count: generateCount }) }, "자동 대진을 생성했습니다.");
-                  if (data?.needsConfirmation && confirm(`\n\n그래도 생성하시겠습니까?`)) {
-                    await request("/api/admin/generate-matches", { method: "POST", body: JSON.stringify({ count: generateCount, force: true }) }, "자동 대진을 생성했습니다.");
+                  const data = await request("/api/admin/generate-matches", { method: "POST", body: JSON.stringify({ count: generateCount }) }, "자동 대진을 생성했습니다.", false);
+                  if (data?.needsConfirmation) {
+                    setMessage(data.warning);
+                    if (confirm(`${data.warning}\n\n그래도 생성하시겠습니까?`)) {
+                      await request("/api/admin/generate-matches", { method: "POST", body: JSON.stringify({ count: generateCount, force: true }) }, "자동 대진을 생성했습니다.");
+                    }
+                    return;
                   }
+                  if (data) setMessage(data.warning ?? "자동 대진을 생성했습니다.");
                 }}
               >
                 대진 생성
