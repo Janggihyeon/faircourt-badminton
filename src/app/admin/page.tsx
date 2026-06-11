@@ -32,7 +32,8 @@ export default function AdminPage() {
   const [playerForm, setPlayerForm] = useState(emptyPlayer);
   const [bulkText, setBulkText] = useState("");
   const [generateCount, setGenerateCount] = useState(2);
-  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [manualSelections, setManualSelections] = useState<string[]>(["", "", "", ""]);
+  const [manualEditMatchId, setManualEditMatchId] = useState<string | null>(null);
   const [aiText, setAiText] = useState("");
 
   const load = useCallback(async () => {
@@ -92,7 +93,11 @@ export default function AdminPage() {
     [state],
   );
   const inProgress = useMemo(() => state?.matches.filter((match) => match.status === "in_progress") ?? [], [state]);
-  const activePlayers = useMemo(() => state?.players.filter((player) => player.status === "active" || player.status === "playing").length ?? 0, [state]);
+  const activePlayerOptions = useMemo(() => {
+    const players = state?.players ?? [];
+    return players.filter((player) => player.status === "active" || manualSelections.includes(player.id));
+  }, [state, manualSelections]);
+  const activePlayers = activePlayerOptions.length;
   const completedCount = useMemo(() => state?.matches.filter((match) => match.status === "completed").length ?? 0, [state]);
   const playingPlayerIds = useMemo(() => new Set(inProgress.flatMap((match) => match.player_ids)), [inProgress]);
 
@@ -103,12 +108,26 @@ export default function AdminPage() {
   const updateSettings = (patch: Partial<AppSettings>) =>
     request("/api/admin/settings", { method: "PATCH", body: JSON.stringify(patch) }, "설정을 저장했습니다.");
 
-  const selectedPayload = () => {
-    if (selectedPlayers.length !== 4) {
-      setError("참가자 4명을 선택해주세요.");
+  const manualPayload = () => {
+    const playerIds = manualSelections.filter(Boolean);
+    if (playerIds.length !== 4) {
+      setError("수동 대진 참가자 4명을 모두 선택해주세요.");
       return null;
     }
-    return { player_ids: selectedPlayers };
+    if (new Set(playerIds).size !== 4) {
+      setError("수동 대진에는 같은 참가자를 중복 선택할 수 없습니다.");
+      return null;
+    }
+    return { player_ids: playerIds };
+  };
+
+  const updateManualSelection = (index: number, playerId: string) => {
+    setManualSelections((current) => current.map((value, valueIndex) => (valueIndex === index ? playerId : value)));
+  };
+
+  const loadMatchIntoManualEditor = (match: MatchWithPlayers) => {
+    setManualEditMatchId(match.id);
+    setManualSelections([...match.player_ids]);
   };
 
   const renderMatch = (match: MatchWithPlayers, controls: "generated" | "queue" | "progress" | "record") => {
@@ -158,14 +177,8 @@ export default function AdminPage() {
               </button>
             ) : null}
             {controls !== "progress" ? (
-              <button
-                className={ghostButtonClass}
-                onClick={() => {
-                  const payload = selectedPayload();
-                  if (payload) void request(`/api/admin/matches/${match.id}`, { method: "PATCH", body: JSON.stringify(payload) }, "선택한 4명으로 수정했습니다.");
-                }}
-              >
-                선택 4명으로 수정
+              <button className={ghostButtonClass} onClick={() => loadMatchIntoManualEditor(match)}>
+                수동 편집
               </button>
             ) : null}
             {controls !== "progress" ? (
@@ -243,7 +256,7 @@ export default function AdminPage() {
               <button
                 className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800"
                 onClick={() => {
-                  if (confirm("참가자는 유지하고 대진표와 경기 기록만 초기화할까요? 참가자는 모두 참여 중 상태로 돌아갑니다.")) {
+                  if (confirm("참가자는 유지하고 대진표와 경기 기록만 초기화할까요? 참가자의 현재 출석·귀가·비활성 상태는 그대로 유지됩니다.")) {
                     void request("/api/admin/reset", { method: "POST", body: JSON.stringify({ keepPlayers: true }) }, "참가자를 유지하고 대진표를 초기화했습니다.");
                   }
                 }}
@@ -298,7 +311,6 @@ export default function AdminPage() {
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="border-b text-slate-500">
                 <tr>
-                  <th className="py-2">선택</th>
                   <th>이름</th>
                   <th>성별</th>
                   <th>실력</th>
@@ -310,15 +322,6 @@ export default function AdminPage() {
               <tbody>
                 {state.players.map((player) => (
                   <tr key={player.id} className={`border-b border-white ${playerStatusStyle[player.status].row}`}>
-                    <td className="py-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedPlayers.includes(player.id)}
-                        onChange={(event) =>
-                          setSelectedPlayers((current) => (event.target.checked ? [...current, player.id].slice(-4) : current.filter((id) => id !== player.id)))
-                        }
-                      />
-                    </td>
                     <td className="font-semibold">{player.name}</td>
                     <td>{genderLabel(player.gender)}</td>
                     <td>{player.skill}</td>
@@ -388,16 +391,58 @@ export default function AdminPage() {
 
           <section className={sectionClass}>
             <h2 className="text-lg font-bold">경기 운영 대기열</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                className={ghostButtonClass}
-                onClick={() => {
-                  const payload = selectedPayload();
-                  if (payload) void request("/api/admin/matches/manual", { method: "POST", body: JSON.stringify({ ...payload, status: "operation_queue" }) }, "수동 대진을 대기열에 추가했습니다.");
-                }}
-              >
-                선택 4명 수동 대진 추가
-              </button>
+            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <p className="text-sm font-bold text-slate-700">{manualEditMatchId ? "수동 대진 수정" : "수동 대진 추가"}</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {[0, 1, 2, 3].map((index) => (
+                  <select
+                    key={index}
+                    className={inputClass}
+                    value={manualSelections[index]}
+                    onChange={(event) => updateManualSelection(index, event.target.value)}
+                  >
+                    <option value="">{index + 1}번 참가자 선택</option>
+                    {activePlayerOptions.map((player) => {
+                      const selectedElsewhere = manualSelections.some((selectedId, selectedIndex) => selectedIndex !== index && selectedId === player.id);
+                      return (
+                        <option key={player.id} value={player.id} disabled={selectedElsewhere}>
+                          {player.name} · {genderLabel(player.gender)} · 실력 {player.skill}
+                        </option>
+                      );
+                    })}
+                  </select>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  className={buttonClass}
+                  onClick={() => {
+                    const payload = manualPayload();
+                    if (!payload) return;
+                    if (manualEditMatchId) {
+                      void request(`/api/admin/matches/${manualEditMatchId}`, { method: "PATCH", body: JSON.stringify(payload) }, "수동 대진을 수정했습니다.").then(() => {
+                        setManualEditMatchId(null);
+                        setManualSelections(["", "", "", ""]);
+                      });
+                      return;
+                    }
+                    void request("/api/admin/matches/manual", { method: "POST", body: JSON.stringify({ ...payload, status: "operation_queue" }) }, "수동 대진을 대기열에 추가했습니다.").then(() => {
+                      setManualSelections(["", "", "", ""]);
+                    });
+                  }}
+                >
+                  {manualEditMatchId ? "수정 저장" : "대기열에 추가"}
+                </button>
+                <button
+                  className={ghostButtonClass}
+                  onClick={() => {
+                    setManualEditMatchId(null);
+                    setManualSelections(["", "", "", ""]);
+                  }}
+                >
+                  선택 비우기
+                </button>
+              </div>
             </div>
             <div className="mt-4 space-y-2">{queue.map((match) => renderMatch(match, "queue"))}</div>
           </section>

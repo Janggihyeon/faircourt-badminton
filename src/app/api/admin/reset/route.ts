@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (keepPlayers) {
       const { error: playersError } = await supabase
         .from("players")
-        .update({ status: "active", games_played: 0, last_played_at: null, updated_at: new Date().toISOString() })
+        .update({ games_played: 0, last_played_at: null, updated_at: new Date().toISOString() })
         .neq("id", "00000000-0000-0000-0000-000000000000");
       if (playersError) throw playersError;
     } else {
