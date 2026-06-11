@@ -2,49 +2,32 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#f5f7f2] px-4 py-6 text-slate-950">
-      <section className="mx-auto grid min-h-[calc(100vh-48px)] max-w-6xl content-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">FairCourt Badminton</p>
-          <h1 className="mt-4 max-w-3xl text-5xl font-black leading-tight text-slate-950 md:text-7xl">
-            공정한 복식 대진을 빠르게 운영하세요
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            참가자 출석, 자동 대진 생성, 운영 대기열, 진행 중 경기와 완료 기록까지 한 화면에서 관리하는 배드민턴 클럽용 MVP입니다.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link className="rounded-md bg-emerald-700 px-5 py-3 font-bold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-800" href="/admin">
-              관리자 운영 화면
-            </Link>
-            <Link className="rounded-md border border-slate-300 bg-white px-5 py-3 font-bold text-slate-900 shadow-sm hover:border-emerald-600" href="/view">
-              회원 보기 화면
-            </Link>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/10">
-          <div className="rounded-md bg-slate-950 p-4 text-white">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div>
-                <p className="text-xs font-semibold text-emerald-300">오늘의 운영판</p>
-                <p className="mt-1 text-xl font-bold">동호회 수요 경기</p>
-              </div>
-              <span className="rounded-full bg-emerald-400 px-3 py-1 text-xs font-black text-slate-950">LIVE</span>
-            </div>
-            <div className="mt-4 grid gap-3">
-              {[
-                ["1코트 진행 중", "김민수 · 최서연 · 박준호 · 한지민"],
-                ["2번 대기", "이도윤 · 김하늘 · 강민재 · 박소연"],
-                ["3번 대기", "정우성 · 정유나 · 최현우 · 오민지"],
-              ].map(([label, names]) => (
-                <div key={label} className="rounded-md border border-white/10 bg-white/10 p-4">
-                  <p className="text-xs font-semibold text-emerald-200">{label}</p>
-                  <p className="mt-2 text-lg font-bold">{names}</p>
-                </div>
-              ))}
+    <main className="min-h-screen bg-slate-950 text-white">
+      <section
+        className="relative flex min-h-screen items-center bg-cover bg-center px-4 py-10"
+        style={{ backgroundImage: "url('/shuttle-bus-hero.png')" }}
+      >
+        <div className="absolute inset-0 bg-slate-950/45" />
+        <div className="relative mx-auto w-full max-w-6xl">
+          <div className="max-w-2xl">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-200">Shuttle Bus</p>
+            <h1 className="mt-4 text-5xl font-black leading-tight md:text-7xl">
+              배드민턴 모임 운영을 더 가볍게
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-100">
+              참가자 출석부터 자동 대진 생성, 운영 대기열, 진행 중 경기와 기록 관리까지 한 번에 정리하는 클럽 운영 도구입니다.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link className="rounded-md bg-emerald-400 px-5 py-3 font-black text-slate-950 shadow-lg shadow-emerald-950/20 hover:bg-emerald-300" href="/admin">
+                관리자 운영 화면
+              </Link>
+              <Link className="rounded-md border border-white/40 bg-white/15 px-5 py-3 font-black text-white backdrop-blur hover:bg-white/25" href="/view">
+                회원 보기 화면
+              </Link>
             </div>
           </div>
         </div>
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950/70 to-transparent" />
       </section>
     </main>
   );

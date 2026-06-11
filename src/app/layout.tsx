@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FairCourt Badminton",
+  title: "Shuttle Bus",
   description: "공정한 배드민턴 복식 대진 운영 도구",
 };
 

@@ -167,7 +167,7 @@ export default function AdminPage() {
         <header className="rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-xl shadow-slate-900/10">
           <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-emerald-300">FairCourt Badminton</p>
+            <p className="text-sm font-semibold text-emerald-300">Shuttle Bus</p>
             <h1 className="text-3xl font-black">관리자 운영 화면</h1>
           </div>
           <div className="flex gap-2">

@@ -47,7 +47,7 @@ export default function PublicViewPage() {
         <header className="rounded-lg border border-white/10 bg-white/[0.06] p-5 shadow-xl shadow-black/20">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-300">FairCourt Badminton</p>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-300">Shuttle Bus</p>
               <h1 className="mt-2 text-4xl font-black">오늘의 경기 현황</h1>
             </div>
             <div className="rounded-md bg-emerald-300 px-4 py-2 text-sm font-black text-slate-950">5초 자동 갱신 · {updatedAt || "-"}</div>

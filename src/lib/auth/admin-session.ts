@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-const COOKIE_NAME = "faircourt_admin";
+const COOKIE_NAME = "shuttle_bus_admin";
 const MAX_AGE = 60 * 60 * 12;
 
 const getSecret = () => {
