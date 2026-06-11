@@ -12,10 +12,10 @@ type State = {
 };
 
 const emptyPlayer = { name: "", gender: "M", skill: 3, status: "not_arrived" };
-const sectionClass = "rounded-lg border border-slate-200 bg-white p-4 shadow-sm";
-const inputClass = "rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-950 outline-none focus:border-emerald-600";
-const buttonClass = "rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50";
-const ghostButtonClass = "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50";
+const sectionClass = "rounded-lg border border-slate-200 bg-white/95 p-5 shadow-sm shadow-slate-900/5";
+const inputClass = "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
+const buttonClass = "rounded-md bg-emerald-700 px-3 py-2 text-sm font-bold text-white shadow-sm shadow-emerald-900/20 hover:bg-emerald-800 disabled:opacity-50";
+const ghostButtonClass = "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 shadow-sm hover:border-emerald-500 hover:bg-emerald-50 disabled:opacity-50";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -25,7 +25,6 @@ export default function AdminPage() {
   const [playerForm, setPlayerForm] = useState(emptyPlayer);
   const [bulkText, setBulkText] = useState("");
   const [generateCount, setGenerateCount] = useState(2);
-  const [moveCount, setMoveCount] = useState(2);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [aiText, setAiText] = useState("");
 
@@ -42,7 +41,6 @@ export default function AdminPage() {
     }
     setState(data);
     setGenerateCount(data.settings.auto_generation_default_count);
-    setMoveCount(data.settings.court_warning_limit);
   }, [router]);
 
   useEffect(() => {
@@ -87,6 +85,8 @@ export default function AdminPage() {
     [state],
   );
   const inProgress = useMemo(() => state?.matches.filter((match) => match.status === "in_progress") ?? [], [state]);
+  const activePlayers = useMemo(() => state?.players.filter((player) => player.status === "active" || player.status === "playing").length ?? 0, [state]);
+  const completedCount = useMemo(() => state?.matches.filter((match) => match.status === "completed").length ?? 0, [state]);
 
   if (!state) {
     return <main className="min-h-screen bg-slate-100 p-6 text-slate-950">불러오는 중...</main>;
@@ -162,12 +162,13 @@ export default function AdminPage() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-100 p-4 text-slate-950 md:p-6">
+    <main className="min-h-screen bg-[#f5f7f2] p-4 text-slate-950 md:p-6">
       <div className="mx-auto max-w-7xl space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-3">
+        <header className="rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-xl shadow-slate-900/10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-emerald-700">FairCourt Badminton</p>
-            <h1 className="text-3xl font-bold">관리자 운영 화면</h1>
+            <p className="text-sm font-semibold text-emerald-300">FairCourt Badminton</p>
+            <h1 className="text-3xl font-black">관리자 운영 화면</h1>
           </div>
           <div className="flex gap-2">
             <a className={ghostButtonClass} href="/view" target="_blank">
@@ -177,7 +178,15 @@ export default function AdminPage() {
               로그아웃
             </button>
           </div>
+                  </div>
         </header>
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <StatCard label="참여 인원" value={activePlayers + "명"} />
+          <StatCard label="생성 대진" value={generated.length + "개"} />
+          <StatCard label="대기열" value={queue.length + "개"} />
+          <StatCard label="완료 경기" value={completedCount + "개"} />
+        </div>
 
         {message ? <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{message}</div> : null}
         {error ? <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
@@ -211,16 +220,28 @@ export default function AdminPage() {
                 ))}
               </select>
             </label>
-            <button
-              className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-700"
-              onClick={() => {
-                if (confirm("정말 오늘의 참가자와 대진표를 모두 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
-                  void request("/api/admin/reset", { method: "POST" }, "초기화했습니다.");
-                }
-              }}
-            >
-              초기화
-            </button>
+            <div className="grid gap-2">
+              <button
+                className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800"
+                onClick={() => {
+                  if (confirm("참가자는 유지하고 대진표와 경기 기록만 초기화할까요? 참가자는 모두 참여 중 상태로 돌아갑니다.")) {
+                    void request("/api/admin/reset", { method: "POST", body: JSON.stringify({ keepPlayers: true }) }, "참가자를 유지하고 대진표를 초기화했습니다.");
+                  }
+                }}
+              >
+                대진만 초기화
+              </button>
+              <button
+                className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-bold text-red-700"
+                onClick={() => {
+                  if (confirm("정말 오늘의 참가자와 대진표를 모두 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+                    void request("/api/admin/reset", { method: "POST", body: JSON.stringify({ keepPlayers: false }) }, "전체 초기화했습니다.");
+                  }
+                }}
+              >
+                전체 초기화
+              </button>
+            </div>
           </div>
         </section>
 
@@ -310,28 +331,33 @@ export default function AdminPage() {
         <div className="grid gap-4 xl:grid-cols-2">
           <section className={sectionClass}>
             <h2 className="text-lg font-bold">자동 대진표 관리</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <select className={inputClass} value={generateCount} onChange={(event) => setGenerateCount(Number(event.target.value))}>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <option key={value} value={value}>
-                    {value}개 생성
-                  </option>
-                ))}
-              </select>
+            <div className="mt-3 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+              <label className="text-sm font-semibold">
+                생성 개수
+                <select className={` mt-1 w-full`} value={generateCount} onChange={(event) => setGenerateCount(Number(event.target.value))}>
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <option key={value} value={value}>
+                      {value}개
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 className={buttonClass}
                 onClick={async () => {
                   const data = await request("/api/admin/generate-matches", { method: "POST", body: JSON.stringify({ count: generateCount }) }, "자동 대진을 생성했습니다.");
-                  if (data?.needsConfirmation && confirm(`${data.warning}\n\n그래도 생성하시겠습니까?`)) {
+                  if (data?.needsConfirmation && confirm(`\n\n그래도 생성하시겠습니까?`)) {
                     await request("/api/admin/generate-matches", { method: "POST", body: JSON.stringify({ count: generateCount, force: true }) }, "자동 대진을 생성했습니다.");
                   }
                 }}
               >
-                자동 생성
+                대진 생성
               </button>
-              <input className={inputClass} type="number" min={1} value={moveCount} onChange={(event) => setMoveCount(Number(event.target.value))} />
-              <button className={ghostButtonClass} onClick={() => request("/api/admin/matches/move-top-to-queue", { method: "POST", body: JSON.stringify({ count: moveCount }) }, "상위 대진을 대기열로 이동했습니다.")}>
-                상위 N개 대기열로
+              <button
+                className={ghostButtonClass}
+                onClick={() => request("/api/admin/matches/move-top-to-queue", { method: "POST", body: JSON.stringify({ count: state.settings.court_warning_limit }) }, "코트 기준만큼 대기열로 이동했습니다.")}
+              >
+                코트 기준만큼 대기열로
               </button>
             </div>
             <div className="mt-4 space-y-2">{generated.map((match) => renderMatch(match, "generated"))}</div>
@@ -395,5 +421,14 @@ export default function AdminPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-900/5">
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
+    </div>
   );
 }
